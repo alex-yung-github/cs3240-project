@@ -1,0 +1,403 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Equipment</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <style>
+        body {
+            background-image: url('{% static "img/hero_img.jpg" %}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            margin: auto;
+            margin-top: 50px;
+        }
+
+        .table {
+            background-color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        td {
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 5px;
+        }
+
+        .custom-carousel-control {
+            filter: invert(100%);
+            width: 25px;
+            height: 25px;
+        }
+
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 20px;
+            margin-top: 80%;
+        }
+
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            background-size: 80%;
+        }
+        .container {
+        position: relative;
+        z-index: 1;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        margin: auto;
+        margin-top: 50px;
+        overflow-x: auto;
+    }
+
+    .table-responsive {
+        min-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            width: 95%;
+            padding: 10px;
+        }
+        
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table {
+            width: 100%;
+            display: table;
+            table-layout: auto;
+        }
+        
+        .table thead,
+        .table tbody {
+            display: table-row-group;
+        }
+        
+        .table tr {
+            display: table-row;
+        }
+        
+        .table th,
+        .table td {
+            display: table-cell;
+            white-space: normal;
+            padding: 8px 4px;
+        }
+        
+        .table td:nth-child(5),
+        .table td:nth-child(7),
+        .table td:nth-child(8),
+        .table td:nth-child(9) {
+            min-width: 120px;
+            max-width: 200px;
+        }
+        
+        .table td:nth-child(6) {
+            width: 100px;
+        }
+        
+        .action-buttons {
+            min-width: 120px;
+            white-space: nowrap;
+        }
+    }
+    </style>
+</head>
+<body>
+
+    {% include 'components/navbar.html' %}
+    
+    <div class="content-wrapper">
+        <div class="container mt-4">
+            <h1>Browse Equipment</h1>
+
+            {% if messages %}
+                <div class="m-3">
+                    {% for message in messages %}
+                        {% if "item" in message.tags %}
+                            {% if 'error' in message.tags %}
+                                <div class="alert alert-danger">{{ message }}</div>
+                            {% else %}
+                                <div class="alert alert-{{ message.level_tag }}">{{ message }}</div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                {% if user.is_authenticated and user.role == "librarian" %}
+                    <div>
+                        <a href="{% url 'add_collection' %}" class="btn btn-primary">
+                            <i class="fas fa-folder-plus"></i> Create Collection
+                        </a>
+                        <a href="{% url 'add_item' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add New Item
+                        </a>
+                    </div>
+                {% endif %} 
+            </div> 
+
+            <!-- Filter Form -->
+            <div class="card filter-card mb-4">
+                <div class="card-header filter-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter"></i> Filter Equipment
+                    </h5>
+                </div>
+                <div class="card-body filter-body">
+                    <form method="GET" action="{% url 'browse_equipment' %}" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ filters.title }}" placeholder="Search by title">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="identifier" class="form-label">Identifier</label>
+                            <input type="text" class="form-control" id="identifier" name="identifier" value="{{ filters.identifier }}" placeholder="Search by identifier">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ filters.location }}" placeholder="Search by location">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="collection" class="form-label">Collection</label>
+                            <select class="form-select" id="collection" name="collection">
+                                <option value="">All Collections</option>
+                                {% for collection in collections %}
+                                    {% if user.role != "guest" or collection.user_can_access %}
+                                        <option value="{{ collection.title }}"
+                                            {% if filters.collection == collection.title %}selected{% endif %}
+                                            {% if not collection.user_can_access %}
+                                                disabled style="color: gray;"
+                                            {% endif %}
+                                        >
+                                            {{ collection.title }}{% if collection.visibility == "private" %} (Private){% endif %}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end filter-btn">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'browse_equipment' %}" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if items %}
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Title</th>
+                        <th>Identifier</th>
+                        <th>Status</th>
+                        <th>Location</th>
+                        <th>Description</th>
+                        <th>Image(s)</th>
+                        <th>Collections</th>
+                        <th>Ratings & Comments</th>
+                        <th>Gear Condition</th>
+                        <th>Actions</th>
+                    </tr>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            {% if item.collections.exists and item.collections.first.visibility == "private" and not user.is_authenticated %}
+                                <i>Private Item</i>
+                            {% else %}
+                                {{ item.title }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.identifier }}</td>
+                        <td>{{ item.get_status_display }}</td>
+                        <td>{{ item.location }}</td>
+                        <td>
+                            {% if item.collections.exists and item.collections.first.visibility == "private" and user.role != "librarian" %}
+                                <i>Restricted Content</i>
+                            {% elif item.description %}
+                                {{ item.description }}
+                            {% else %}
+                                <i>No description</i>
+                            {% endif %}
+                        </td>
+                        <td style="width: 120px; text-align: center;">
+                            <div id="carousel{{ item.id }}" class="carousel slide" data-bs-ride="carousel" style="width: 100px; height: 100px; overflow: hidden;">
+                                <div class="carousel-inner">
+                                    <!-- Primary Image -->
+                                    <div class="carousel-item active">
+                                        <img src="{{ item.get_image_url }}" class="d-block w-100 item-image" alt="{{ item.title }}">
+                                    </div>
+
+                                    <!-- Extra Images -->
+                                    {% for img in item.extra_images.all %}
+                                    <div class="carousel-item">
+                                        <img src="{{ img.get_image_url }}" class="d-block w-100 item-image" alt="{{ item.title }}">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Carousel Controls (Black Arrows) -->
+                                {% if item.extra_images.all %}
+                                <button class="carousel-control-prev custom-carousel-control" type="button" data-bs-target="#carousel{{ item.id }}" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                </button>
+                                <button class="carousel-control-next custom-carousel-control" type="button" data-bs-target="#carousel{{ item.id }}" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if item.collections.exists %}
+                                {% for collection in item.collections.all %}
+                                    {{ collection.title }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                None
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.comments.all %}
+                                {% with see_more_added=False %}
+                                    {% for comment in item.comments.all|slice:":2" %}
+                                        <p><strong>{{ comment.user.username }}</strong>: 
+                                            {{ comment.rating }}⭐ - 
+                                            {% if comment.text|length > 50 %}
+                                                {{ comment.text|slice:":50" }}...
+                                                {% if not see_more_added %}
+                                                    {% with True as see_more_added %}{% endwith %}
+                                                {% endif %}
+                                            {% else %}
+                                                {{ comment.text }}
+                                            {% endif %}
+                                        </p>
+                                    {% endfor %}
+                        
+                                    {# Show "See more..." if not already added AND (comments > 2 OR any comment was truncated) #}
+                                    {% if not see_more_added or item.comment_count > 2 %}
+                                        <p><a href="{% url 'item_detail' item.id %}">See more...</a></p>
+                                        {% with True as see_more_added %}{% endwith %}
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <i>No ratings yet</i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.gear_ratings.all %}
+                                {% with see_more_gear_added=False %}
+                                    {% for gear_rating in item.gear_ratings.all|slice:":2" %}
+                                        <p><strong>{{ gear_rating.user.username }}</strong>: 
+                                            {{ gear_rating.rating }}⭐ - 
+                                            {% if gear_rating.comment|length > 50 %}
+                                                {{ gear_rating.comment|slice:":50" }}...
+                                                {% if not see_more_gear_added %}
+                                                    {% with True as see_more_gear_added %}{% endwith %}
+                                                {% endif %}
+                                            {% else %}
+                                                {{ gear_rating.comment }}
+                                            {% endif %}
+                                        </p>
+                                    {% endfor %}
+                                    {% if not see_more_gear_added or item.gear_rating_count > 2 %}
+                                        <p><a href="{% url 'item_detail' item.id %}">See more...</a></p>
+                                        {% with True as see_more_gear_added %}{% endwith %}
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <i>No gear ratings yet</i>
+                            {% endif %}
+                        </td>
+                        
+                                                                                                        
+                        <td class="action-buttons">
+                            <a href="{% url 'item_detail' item.id %}" class="btn btn-primary btn-spacing">View Details</a>
+
+                            {% if not user.is_authenticated %}
+                                <button class="btn btn-secondary btn-spacing" disabled>Sign in to Borrow</button>
+                            {% elif item.status == "in_repair" or item.status == "lost" %}
+                                <div class="text-danger text-center">
+                                    You cannot request to borrow because this item is {{ item.get_status_display|lower }}.
+                                </div>
+                            {% else %}
+                                <a href="{% url 'request_borrow' item.id %}" class="btn btn-success btn-spacing">
+                                    <i class="fas fa-hand-paper"></i>
+                                    {% if user.role == 'librarian' %}
+                                        Borrow Item (Auto-approval)
+                                    {% else %}
+                                        Request to Borrow
+                                    {% endif %}
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% else %}
+            <p>No available items at the moment.</p>
+            {% endif %} 
+            <a href="{% url 'role_based_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    {% include 'components/footer.html' %}
+</body>
+</html>

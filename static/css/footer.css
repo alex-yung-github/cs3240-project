@@ -1,0 +1,24 @@
+/* Full height layout */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* makes sure content expands but DOES NOT go behind the footer */
+.content-wrapper {
+  flex: 1;
+}
+
+
+footer {
+  margin-top: auto; /* Pushes footer down */
+  width: 100%;
+  background-color: #343a40; 
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+  position: relative; 
+}

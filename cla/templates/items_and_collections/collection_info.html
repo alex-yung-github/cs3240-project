@@ -1,0 +1,188 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collection Details: {{ collection.title }}</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+</head>
+<style>
+    body {
+        background-image: url('{% static "img/hero_img.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        min-height: 100vh;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        z-index: 0;
+    }
+
+    .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 1;
+        text-align: center;
+    }
+</style>
+<body>
+
+{% include 'components/navbar.html' %}
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="container mt-4">
+    <h2 class="text-center">{{ collection.title }} ({{ collection.visibility|title }})</h2>
+    <p class="text-center text-muted">Created by: {{ collection.created_by.username }}</p>
+
+    <div class="d-flex justify-content-between mb-3">
+        <h4>Items in Collection</h4>
+        {% if request.user.role == 'librarian' %}
+            <a href="{% url 'manage_collections' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Collections
+            </a>
+        {% elif request.user.role == 'patron' %}
+            <a href="{% url 'patron_collections' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to My Collections
+            </a>
+        {% else %}
+            <a href="{% url 'guest_collections' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Collections
+            </a>
+        {% endif %}
+    </div> 
+
+    <div class="card filter-card mb-4">
+        <div class="card-header filter-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter"></i> Search Items in This Collection
+            </h5>
+        </div>
+        <div class="card-body filter-body">
+            <form method="GET" action="{% url 'collection_info' collection.id %}" class="row g-3">
+                <div class="col-md-5">
+                    <label for="title" class="form-label">Item Title</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ filters.title }}" placeholder="Search by title">
+                </div>
+                <div class="col-md-5">
+                    <label for="keyword" class="form-label">Keywords</label>
+                    <input type="text" class="form-control" id="keyword" name="keyword" value="{{ filters.keyword }}" placeholder="Search by keywords in description, location, or identifier">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{% url 'collection_info' collection.id %}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Identifier</th>
+                <th>Location</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.identifier }}</td>
+                    <td>{{ item.location }}</td>
+                    <td>
+                        <a href="{% url 'item_detail' item.id %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        {% if can_edit %}
+                        <form method="POST" action="{% url 'remove_item_from_collection' collection.id item.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove item from collection?');">
+                                <i class="fas fa-minus-circle"></i> Remove
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">
+                        {% if filters.title or filters.keyword %}
+                            No items found matching your search criteria.
+                        {% else %}
+                            No items in this collection.
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+    {% if can_edit %}
+    <h4>Add Items to Collection</h4>
+    {% if items_that_can_be_added %}
+        <form method="POST" action="{% url 'add_item_to_collection' collection.id %}">
+            {% csrf_token %}
+            <div class="d-flex">
+                <select name="item_id" class="form-select me-2">
+                    {% for item in items_that_can_be_added %}
+                        <option value="{{ item.id }}">{{ item.title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+        </form>
+    {% else %}
+        <div class="alert alert-info">
+            No items available to add to this collection.
+        </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+{% include 'components/footer.html' %}
+
+<script>
+  // Auto-dismiss alerts after 5 seconds
+  setTimeout(function () {
+    let alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function (alert) {
+      let bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+      bsAlert.close();
+    });
+  }, 5000); // 5000 ms = 5 seconds
+</script>
+
+</body>
+</html>

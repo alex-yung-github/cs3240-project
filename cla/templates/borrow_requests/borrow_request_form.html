@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Borrow</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <style>
+        #calendar {
+            max-width: 400px;
+            margin: auto;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    {% include "components/navbar.html" %}
+
+    <div class="container mt-4">
+        <h2>Request to Borrow: {{ item.title }}</h2> 
+
+        {% if user.role == 'librarian' %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> As a librarian, your request will be automatically approved once submitted.
+        </div>
+        {% endif %}
+        
+        <form method="POST">
+            {% csrf_token %}
+
+
+            <div class="mb-3">
+                <label for="calendar" class="form-label">Select Borrow Date</label>
+                <small class="text-muted d-block mb-2">
+                    Click and drag to select a date range. The item will be due the date after your selected end date.
+                    <strong>You may borrow for up to 7 days.</strong>
+                </small>                
+                <div id="calendar"></div>
+                <input type="hidden" id="start-date" name="start_date" required>
+                <input type="hidden" id="end-date" name="end_date" required>
+                <input type="hidden" id="due-date" name="due_date" required>
+             </div>
+
+            <div class="mb-3">
+                <label for="start-date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start-date-display" name="start_date_manual">
+            </div>
+
+            <div class="mb-3">
+                <label for="end-date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end-date-display" name="end_date_manual">
+            </div>
+            
+            <div class="mb-3">
+                <label for="due_date" class="form-label">Due Date</label>
+                <input type="text" class="form-control-plaintext border rounded p-2 bg-light d-block" id="due-date-display" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label for="reason" class="form-label">Reason for Borrowing</label>
+                <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+            </div>
+    
+            <button type="submit" class="btn btn-success">Submit Request</button>
+            <a href="{% url 'browse_equipment' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    {% include "components/footer.html" %}
+</body>
+
+<!--Chat gpt 4o helped reformat this section to allow for date range other than 7 days automatically-->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    let selectedEvent = null;
+
+    const borrowedEvents = [
+        {% for request in borrow_requests %}
+        {
+            start: new Date('{{ request.borrow_date|date:"Y-m-d" }}'),
+            end: new Date('{{ request.due_date|date:"Y-m-d" }}')
+        },
+        {% endfor %}
+    ];
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        selectable: true,
+        select: function (info) {
+            const startDate = info.startStr;
+
+            // Adjust end date for FullCalendar's exclusive logic
+            const endDateObj = new Date(info.end);
+            endDateObj.setDate(endDateObj.getDate() - 1);
+            const endDate = endDateObj.toISOString().split("T")[0];
+
+            // Enforce 7-day limit
+            const diffInDays = Math.ceil((endDateObj - info.start) / (1000 * 60 * 60 * 24));
+            if (diffInDays > 7) {
+                alert("You can only borrow for a maximum of 7 days.");
+                return;
+            }
+
+            // Due date = end date + 1
+            const dueDateObj = new Date(endDateObj);
+            dueDateObj.setDate(dueDateObj.getDate() + 1);
+            const dueDate = dueDateObj.toISOString().split("T")[0];
+
+            // Check for conflicts
+            const conflict = borrowedEvents.some(event => {
+                return info.start < event.end && endDateObj >= event.start;
+            });
+
+            if (conflict) {
+                alert("This borrowing period overlaps with an existing request. Choose another range.");
+                return;
+            }
+
+            if (selectedEvent) {
+                selectedEvent.remove();
+            }
+
+            selectedEvent = calendar.addEvent({
+                title: "Selected Borrow Period",
+                start: startDate,
+                end: dueDate,
+                color: "blue"
+            });
+
+            document.getElementById("start-date").value = startDate;
+            document.getElementById("end-date").value = endDate;
+            document.getElementById("due-date").value = dueDate;
+            document.getElementById("start-date-display").value = startDate;
+            const formattedDue = dueDateObj.toISOString().split("T")[0]; 
+            const [yyyy, mm, dd] = formattedDue.split("-");
+            document.getElementById("due-date-display").value = `${mm}/${dd}/${yyyy}`;
+            document.getElementById("end-date-display").value = endDate;
+
+        },
+
+        validRange: {
+            start: new Date()
+        },
+
+        events: borrowedEvents.map(event => ({
+            title: "Unavailable",
+            start: event.start.toISOString().split("T")[0],
+            end: event.end.toISOString().split("T")[0],
+            color: "red",
+            rendering: "background"
+        }))
+    });
+
+    calendar.render();
+
+    // talked with the TA during last meeting and mentioned also having interactive start/due date boxes synced with calendar drag and click
+    // chat gpt helped dynamically sync the start and due date boxes with the drag and select calendar
+
+    document.getElementById("start-date-display").addEventListener("change", handleManualChange);
+    document.getElementById("end-date-display").addEventListener("change", handleManualChange);
+
+    function handleManualChange() {
+        const startInput = document.getElementById("start-date-display").value;
+        const endInput = document.getElementById("end-date-display").value;
+
+        if (!startInput || !endInput) return;
+
+        const start = new Date(startInput);
+        const end = new Date(endInput);
+
+        const diffInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        if (diffInDays > 7 || diffInDays < 1) {
+            alert("You can borrow for 1–7 days only.");
+
+            // Reset end-date to last valid one (match calendar)
+            if (selectedEvent) {
+                const lastValidEnd = new Date(selectedEvent.end);
+                lastValidEnd.setDate(lastValidEnd.getDate() - 1); // calendar end is exclusive
+                const lastValidEndStr = lastValidEnd.toISOString().split("T")[0];
+                document.getElementById("end-date-display").value = lastValidEndStr;
+            }
+
+            return;
+        }
+
+        const conflict = borrowedEvents.some(event => {
+            return start < event.end && end >= event.start;
+        });
+
+        if (conflict) {
+            alert("This borrowing period overlaps with an existing request.");
+            return;
+        }
+
+        if (selectedEvent) selectedEvent.remove();
+
+        const dueDateObj = new Date(end);
+        dueDateObj.setDate(dueDateObj.getDate() + 1);
+        const dueDateStr = dueDateObj.toISOString().split("T")[0];
+
+        selectedEvent = calendar.addEvent({
+            title: "Selected Borrow Period",
+            start: startInput,
+            end: dueDateStr,
+            color: "blue"
+        });
+
+        document.getElementById("start-date").value = startInput;
+        document.getElementById("end-date").value = endInput;
+        document.getElementById("due-date").value = dueDateStr;
+        const formattedDueManual = dueDateObj.toISOString().split("T")[0];
+        const [yyyyManual, mmManual, ddManual] = formattedDueManual.split("-");
+        document.getElementById("due-date-display").value = `${mmManual}/${ddManual}/${yyyyManual}`;
+    }
+
+
+});
+</script>
+</html>    
+
+

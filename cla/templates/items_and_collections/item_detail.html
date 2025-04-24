@@ -1,0 +1,492 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ item.title }}</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <style>
+        #calendar {
+            max-width: 500px;
+            font-size: 0.8rem;
+        }
+        body {
+            background-image: url('{% static "img/hero_img.jpg" %}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            margin: auto;
+            margin-top: 50px;
+        }
+
+        .btn-container {
+            margin-bottom: 20px;
+        }
+
+        .comment-section {
+            margin-top: 30px;
+        }
+
+        .comment {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .image-section {
+            margin: 20px 0;
+        }
+
+        .main-image {
+            max-width: 100%;
+            height: 400px;
+            max-height: 400px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .gallery-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-image:hover, .gallery-image.active {
+            border-color: #007bff;
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Inline editing styles */
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .edit-form textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .edit-form select {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .edit-form-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .comment-content {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'components/navbar.html' %}
+    <div class="content-wrapper">
+        <div class="container">
+            <div class="btn-container">
+                <a href="{% url 'browse_equipment' %}" class="btn btn-secondary">← Back to Browse</a>
+                <a href="{% url 'role_based_dashboard' %}" class="btn btn-dark">← Back to Dashboard</a>
+            </div>
+
+            <h1>{{ item.title }}</h1>
+            <p><strong>Identifier:</strong> {{ item.identifier }}</p>
+            <p><strong>Status:</strong> {{ item.get_status_display }}</p>
+            <p><strong>Location:</strong> {{ item.location }}</p>
+            <p><strong>Description:</strong> {{ item.description }}</p>
+            <div class="image-section">
+                <h3>Images</h3>
+                <img id="mainImage" src="{{ item.get_image_url }}" alt="{{ item.title }}" class="main-image">
+
+                <div class="image-gallery">
+                    {% if item.get_image_url %}
+                        <img src="{{ item.get_image_url }}"
+                             alt="{{ item.title }}"
+                             class="gallery-image active"
+                             onclick="changeMainImage(this, '{{ item.get_image_url }}')">
+                    {% endif %}
+
+                    {% for image in item.extra_images.all %}
+                        <img src="{{ image.get_image_url }}"
+                             alt="{{ item.title }}"
+                             class="gallery-image"
+                             onclick="changeMainImage(this, '{{ image.get_image_url }}')">
+                    {% endfor %}
+                </div>
+
+            </div>
+
+            <div class="availability-section">
+                <h3>Availability</h3>
+                {% if user.is_authenticated %}
+                    {% if user.role == "patron" or user.role == "librarian" %}
+                        <div id="calendar"></div>
+                    {% else %}
+                        <p class="text-muted">Only Librarians and Patrons can view item availability.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">You must be logged in as a <strong>Patron</strong> or <strong>Librarian</strong> to view item availability.</p>
+                {% endif %}
+            </div>
+
+
+
+            {% if user.is_authenticated and user.role == "librarian" %}
+                <hr>
+                <h3>Manage Item</h3>
+                <a href="{% url 'edit_item' item.id %}" class="btn btn-warning">Edit Item</a>
+                <a href="{% url 'delete_item' item.id %}" class="btn btn-danger"
+                onclick="return confirm('Are you sure you want to delete this item?');">
+                Delete Item
+                </a>
+                <a href="{% url 'move_item_to_collection' item.id %}" class="btn btn-info">Move to Collection</a>
+            {% endif %}
+
+            {% if user.is_authenticated and user.role == "patron" and is_private_collection == False %}
+                <hr>
+                <h3>Manage Item</h3>
+                <a href="{% url 'move_item_to_collection' item.id %}" class="btn btn-info">Move to Collection</a>
+            {% endif %}
+
+            {% if user.is_authenticated and user.role == "patron"  and is_private_collection == True %}
+                <hr>
+                <h3>Manage Item</h3>
+                <button class="btn btn-secondary" disabled>Move to Collection</button>
+                <p>This item is in a private collection and cannot be moved.</p>
+            {% endif %}
+
+            <!-- Comment Section -->
+            <div class="comment-section">
+                <h3>Comments & Ratings</h3>
+
+                {% if user.is_authenticated and user.role == "patron" %}
+                    <form method="POST" action="{% url 'add_comment' item.id %}">
+                        {% csrf_token %}
+                        <label for="rating">Rating (1 being low and 5 being high):</label>
+                        <select name="rating" required>
+                            {% for i in "12345" %}
+                                <option value="{{ i }}">{{ i }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label for="text">Comment:</label>
+                        <textarea name="text" required></textarea>
+
+                        <button type="submit" class="btn btn-primary">Submit Comment</button>
+                    </form>
+                {% else %}
+                    <p>You must be logged in as a Patron to leave a comment.</p>
+                {% endif %}
+
+                <!-- Display Existing Comments -->
+                {% if item.comments.all %}
+                    <ul class="list-group mt-3">
+                        {% for comment in item.comments.all %}
+                            <li class="comment" id="comment-{{ comment.id }}">
+                                <div class="comment-view">
+                                    <strong>{{ comment.user.username }}</strong>
+                                    - {{ comment.rating }}⭐️
+                                    <p class="comment-content">{{ comment.text }}</p>
+
+                                    {% if user == comment.user %}
+                                        <button class="btn btn-sm btn-warning edit-comment-btn"
+                                                onclick="toggleCommentEdit('{{ comment.id }}')">Edit</button>
+                                        <a href="{% url 'delete_comment' comment.id %}" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Are you sure you want to delete this comment?');">
+                                            Delete
+                                        </a>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Inline Edit Form -->
+                                {% if user == comment.user %}
+                                    <div class="edit-form" id="edit-comment-form-{{ comment.id }}">
+                                        <form method="POST" action="{% url 'edit_comment' comment.id %}"
+                                              id="edit-comment-{{ comment.id }}">
+                                            {% csrf_token %}
+                                            <label for="rating">Rating:</label>
+                                            <select name="rating" required>
+                                                {% for i in "12345" %}
+                                                    <option value="{{ i }}"
+                                                        {% if comment.rating == i|add:"0" %}selected{% endif %}>
+                                                        {{ i }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="text">Comment:</label>
+                                            <textarea name="text" required>{{ comment.text }}</textarea>
+                                            <div class="edit-form-buttons">
+                                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                                <button type="button" class="btn btn-sm btn-secondary"
+                                                        onclick="toggleCommentEdit('{{ comment.id }}')">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No comments yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Gear Condition Rating Section -->
+            <div class="comment-section">
+                <h3>Gear Condition Rating</h3>
+
+                {% if user.is_authenticated and user.role == "patron" %}
+                    <form method="POST" action="{% url 'submit_gear_rating' item.id %}">
+                        {% csrf_token %}
+                        <label for="gear_rating">Condition Rating (1 being low and 5 being high):</label>
+                        <select name="gear_rating" required>
+                            {% for i in "12345" %}
+                                <option value="{{ i }}">{{ i }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label for="gear_comment">Condition Comment:</label>
+                        <textarea name="gear_comment" required></textarea>
+
+                        <button type="submit" class="btn btn-primary">Submit Gear Condition Rating</button>
+                    </form>
+                {% else %}
+                    <p>You must be logged in as a Patron to rate the gear condition.</p>
+                {% endif %}
+
+                <!-- Existing Gear Condition Ratings -->
+                {% if item.gear_ratings.all %}
+                    <ul class="list-group mt-3">
+                        {% for gear_rating in item.gear_ratings.all %}
+                            <li class="comment" id="gear-rating-{{ gear_rating.id }}">
+                                <div class="comment-view">
+                                    <strong>{{ gear_rating.user.username }}</strong>
+                                    - {{ gear_rating.rating }}⭐️
+                                    <p class="comment-content">{{ gear_rating.comment }}</p>
+
+                                    {% if user == gear_rating.user %}
+                                        <button class="btn btn-sm btn-warning edit-gear-btn"
+                                                onclick="toggleGearRatingEdit('{{ gear_rating.id }}')">Edit</button>
+                                        <a href="{% url 'delete_gear_rating' gear_rating.id %}" class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Are you sure you want to delete this gear condition rating?');">
+                                           Delete
+                                        </a>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Inline Edit Form for Gear Rating -->
+                                {% if user == gear_rating.user %}
+                                    <div class="edit-form" id="edit-gear-form-{{ gear_rating.id }}">
+                                        <form method="POST" action="{% url 'edit_gear_rating' gear_rating.id %}"
+                                              id="edit-gear-{{ gear_rating.id }}">
+                                            {% csrf_token %}
+                                            <label for="gear_rating">Condition Rating:</label>
+                                            <select name="gear_rating" required>
+                                                {% for i in "12345" %}
+                                                    <option value="{{ i }}"
+                                                        {% if gear_rating.rating == i|add:"0" %}selected{% endif %}>
+                                                        {{ i }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            <label for="gear_comment">Condition Comment:</label>
+                                            <textarea name="gear_comment" required>{{ gear_rating.comment }}</textarea>
+                                            <div class="edit-form-buttons">
+                                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                                <button type="button" class="btn btn-sm btn-secondary"
+                                                        onclick="toggleGearRatingEdit('{{ gear_rating.id }}')">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No gear condition ratings yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImg">
+    </div>
+    {% include 'components/footer.html' %}
+
+    <script>
+        function changeMainImage(element, imageUrl) {
+            document.getElementById('mainImage').src = imageUrl;
+
+            // Update active state in thumbnails
+            let thumbnails = document.getElementsByClassName('gallery-image');
+            for (let i = 0; i < thumbnails.length; i++) {
+                thumbnails[i].classList.remove('active');
+            }
+            element.classList.add('active');
+        }
+
+        let modal = document.getElementById('imageModal');
+        let modalImg = document.getElementById('modalImg');
+        let mainImage = document.getElementById('mainImage');
+
+        mainImage.onclick = function() {
+            modal.style.display = "block";
+            modalImg.src = this.src;
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Inline editing functions
+        function toggleCommentEdit(commentId) {
+            const viewDiv = document.querySelector(`#comment-${commentId} .comment-view`);
+            const editForm = document.getElementById(`edit-comment-form-${commentId}`);
+
+            if (editForm.style.display === 'block') {
+                viewDiv.style.display = 'block';
+                editForm.style.display = 'none';
+            } else {
+                viewDiv.style.display = 'none';
+                editForm.style.display = 'block';
+            }
+        }
+
+        function toggleGearRatingEdit(ratingId) {
+            const viewDiv = document.querySelector(`#gear-rating-${ratingId} .comment-view`);
+            const editForm = document.getElementById(`edit-gear-form-${ratingId}`);
+
+            if (editForm.style.display === 'block') {
+                viewDiv.style.display = 'block';
+                editForm.style.display = 'none';
+            } else {
+                viewDiv.style.display = 'none';
+                editForm.style.display = 'block';
+            }
+        }
+    </script>
+
+
+    {% if user.role == "librarian" or user.role == "patron" %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+
+            const unavailableEvents = [
+                {% for request in borrow_requests %}
+                {
+                    title: "Unavailable",
+                    start: "{{ request.borrow_date|date:'Y-m-d'|escapejs }}",
+                    end: "{{ request.due_date|date:'Y-m-d'|escapejs }}",
+                    color: "red"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: unavailableEvents,
+                height: 'auto',
+                aspectRatio: 1.35
+            });
+
+            calendar.render();
+        });
+    </script>
+    {% endif %}
+
+    {% if messages %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for message in messages %}
+                alert("{{ message }}");
+            {% endfor %}
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

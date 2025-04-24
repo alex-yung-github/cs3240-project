@@ -1,0 +1,206 @@
+{% include "components/navbar.html" %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: #f8f9fa;">
+    <div class="card shadow-lg" style="max-width: 550px; width: 100%; border-radius: 8px; border: none;">
+        <div class="card-body p-4">
+            <h2 class="text-center mb-4">Move Item to Collection</h2>
+            <hr class="mb-4">
+
+            <p class="text-center mb-4"><strong>Item:</strong> {{ item.title }}</p>
+
+            <form method="POST" id="collectionForm">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold mb-2">Select Collection(s)</label>
+                    {% if collections %}
+                        <div class="list-group" style="border-radius: 8px; overflow: hidden;">
+                            {% for collection in collections %}
+                            <label class="list-group-item d-flex align-items-center border-start-0 border-end-0" style="padding: 12px 16px;">
+                                <input type="checkbox" name="collection_id" value="{{ collection.id }}"
+                                    class="form-check-input me-3 collection-checkbox"
+                                    data-visibility="{{ collection.visibility }}"
+                                    {% if collection in item.collections.all %}checked{% endif %}
+                                >
+                                <span class="fs-6">{{ collection.title }}</span>
+                                <span class="badge bg-{% if collection.visibility == 'private' %}danger{% else %}primary{% endif %} ms-auto">
+                                    {{ collection.visibility|title }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                    <div class="alert alert-info text-center py-4">
+                        <i class="fas fa-info-circle mb-2" style="font-size: 24px;"></i>
+                        <p class="mb-0">No collections available. You can create a collection first.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-warning d-none mt-3 mb-4" id="privateWarning">
+                    You can only select one private collection at a time. If you select a private collection, all other selections will be cleared.
+                </div>
+
+                <div class="d-grid gap-3 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Move Item
+                    </button>
+                    <a href="{% url 'item_detail' item.id %}" class="btn btn-secondary btn-lg">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include "components/footer.html" %}
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const checkboxes = document.querySelectorAll(".collection-checkbox");
+    const privateWarning = document.getElementById("privateWarning");
+
+    // Check initial state when the page loads
+    checkPrivateSelections();
+
+    // Add event listener to each checkbox
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener("change", function() {
+            const isPrivate = this.dataset.visibility === "private";
+
+            // If this is a private collection being checked
+            if (isPrivate && this.checked) {
+                // Uncheck all other checkboxes
+                checkboxes.forEach(cb => {
+                    if (cb !== this) {
+                        cb.checked = false;
+                    }
+                });
+                // Show warning
+                privateWarning.classList.remove("d-none");
+            }
+            // If this is a public collection being checked and a private one is already checked
+            else if (!isPrivate && this.checked && hasPrivateSelected()) {
+                // Keep this checkbox unchecked
+                this.checked = false;
+                alert("You can only select one private collection at a time. Please unselect the private collection first.");
+            }
+            // Check if we need to show/hide warning based on current selections
+            else {
+                checkPrivateSelections();
+            }
+        });
+    });
+
+    // Function to check if any private collection is selected
+    function hasPrivateSelected() {
+        return Array.from(checkboxes).some(cb =>
+            cb.checked && cb.dataset.visibility === "private"
+        );
+    }
+
+    // Function to update warning visibility
+    function checkPrivateSelections() {
+        if (hasPrivateSelected()) {
+            privateWarning.classList.remove("d-none");
+        } else {
+            privateWarning.classList.add("d-none");
+        }
+    }
+});
+</script>
+
+<style>
+    .container {
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .list-group-item {
+        transition: background-color 0.15s ease-in-out;
+        border-width: 1px;
+    }
+
+    .list-group-item:hover {
+        background-color: #f1f3f5;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+    }
+
+    .btn-primary {
+        background-color: #3366ff;
+        border: none;
+        height: 50px;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+        height: 50px;
+    }
+
+    hr {
+        opacity: 0.1;
+    }
+
+    .alert-warning {
+        background-color: #fff8e1;
+        border-color: #ffe082;
+        color: #856404;
+    }
+</style>
+
+    .list-group-item:hover {
+        background-color: #f1f3f5;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+    }
+
+    .btn-primary {
+        background-color: #3366ff;
+        border: none;
+        height: 50px;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+        height: 50px;
+    }
+
+    hr {
+        opacity: 0.1;
+    }
+
+    .alert-warning {
+        background-color: #fff8e1;
+        border-color: #ffe082;
+        color: #856404;
+    }
+</style>

@@ -1,0 +1,246 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+}
+.modules {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+.module-link {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+.module-link:hover {
+    background-color: #0056b3;
+}
+
+.result-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #c3e6cb;body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+        margin: 0; /* Reset default margin */
+        height: 100%; /* Ensure body takes full height */
+    }
+    
+    html {
+        height: 100%; /* Ensure html takes full height */
+    }
+    
+    .modules {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+    }
+    
+    .module-link {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .module-link:hover {
+        background-color: #0056b3;
+    }
+    
+    .result-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #c3e6cb;
+        background-color: #d4edda;
+        color: #155724;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+    
+    .content-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh; /* Ensure wrapper fills viewport height */
+    }
+    
+    .hero-image {
+        background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/static/img/hero_img.jpg');
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover; /* Ensure background fills the div */
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1 0 auto; /* Grow to fill available space */
+        height: auto; /* Remove fixed height */
+    }
+    
+    .hero-text {
+        color: white;
+        text-align: center;
+    }
+    
+    .hero-text h1 {
+        font-size: 4rem; 
+        font-weight: bold;
+    }
+    
+    .hero-text #typed-output {
+        font-size: 1.5rem;
+        margin-top: 20px;
+    }
+    
+    .hero-cards {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 40px;
+    }
+    
+    .card-custom {
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+        color: white;
+        width: 18rem;
+        border: none;
+    }
+    
+    .card-custom .card-body a {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    
+    .card-custom .card-body a:hover {
+        text-decoration: underline;
+    }
+    
+    #typed-output {
+        display: inline;
+    }
+    
+    .logo {
+        width: 25em;
+        height: 5em;
+        border-radius: 10%;
+        background-color: #ffffff; 
+        padding: 5px;
+        margin-right: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .custom-nav-item {
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .custom-btn {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        line-height: normal;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    footer {
+        flex-shrink: 0; /* Prevent footer from shrinking */
+    }
+    background-color: #d4edda;
+    color: #155724;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.hero-image {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/static/img/hero_img.jpg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1 0 auto; /* Added for flexbox compatibility */
+    height: auto; /* Remove fixed height */
+  }
+
+.hero-text {
+    color: white;
+    text-align: center;
+}
+
+.hero-text h1 {
+    font-size: 4rem; 
+    font-weight: bold;
+}
+
+.hero-text #typed-output {
+    font-size: 1.5rem;
+    margin-top: 20px;
+}
+
+.hero-cards {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.card-custom {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+    color: white;
+    width: 18rem;
+    border: none;
+}
+
+.card-custom .card-body a {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.card-custom .card-body a:hover {
+    text-decoration: underline;
+}
+
+#typed-output {
+    display: inline;
+}
+
+.logo {
+    width: 25em;
+    height: 5em;
+    border-radius: 10%;
+    background-color: #ffffff; 
+    padding: 5px;
+    margin-right: 1rem;
+    margin-bottom: 1rem
+}
+
+.custom-nav-item {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.custom-btn {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    line-height: normal;
+    padding: 0.375rem 0.75rem;
+}

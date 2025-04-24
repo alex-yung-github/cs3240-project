@@ -1,0 +1,6 @@
+/venv
+*/__pycache__
+/staticfiles
+/cla/migrations/__pycache__
+db.sqlite3
+*.pyc

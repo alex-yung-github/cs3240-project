@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Borrowed Items</title>
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('{% static "img/hero_img.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+    }
+
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-top: 50px;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+  {% include 'components/navbar.html' %}
+
+  <div class="container mt-5">
+    <h2>Manage Borrowed Items</h2>
+    <p>View details of all currently borrowed items.</p>
+
+    {% if borrowed_items %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Item</th>
+            <th>Borrowed On</th>
+            <th>Due Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for request in borrowed_items %}
+            <tr class="{% if request.days_remaining < 0 %}table-danger{% elif request.days_remaining <= 2 %}table-warning{% endif %}">
+              <td>{{ request.item.user.username }}</td>
+              <td>{{ request.item.item.title }}</td>
+              <td>{{ request.item.borrow_date|date:"M d, Y" }}</td>
+              <td>
+                {{ request.item.due_date|date:"M d, Y" }}
+                {% if request.days_remaining is not None %}
+                  {% if request.days_remaining < 0 %}
+                    <span class="text-danger"> (Overdue)</span>
+                  {% elif request.days_remaining <= 2 %}
+                    <span class="text-warning"> ({{ request.days_remaining }} days remaining)</span>
+                  {% else %}
+                    <span class="text-success"> ({{ request.days_remaining }} days remaining)</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">N/A</span>
+                {% endif %}
+              </td>
+              <td>
+                <form action="{% url 'send_reminder' request.item.id %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-info btn-sm">Send Reminder</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>You have no borrowed items.</p>
+    {% endif %}
+
+    <a href="{% url 'librarian_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+  {% include 'components/footer.html' %}
+</body>
+</html>

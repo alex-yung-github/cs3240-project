@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ action }}</title>
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .form-container {
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        } 
+
+        .character-counter {
+        color: #6c757d;
+        font-size: 0.8rem;
+        text-align: right;
+        margin-top: 5px;
+        }
+        .character-counter.warning {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'components/navbar.html' %}
+    
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 90vh; margin-top: 70px; margin-bottom: 20px;">
+        <div class="card shadow-lg p-4 form-container">
+            <div class="card-body">
+                <h2 class="card-title text-center">{{ action }}</h2>
+                <hr>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        {% if field.name != 'extra_images' and field.name != 'status' %}
+                            <div class="mb-3">
+                                {{ field.label_tag }}
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="alert alert-danger">
+                                        {{ field.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if object.status == "in_use" or object.status == "reserved" %}
+                        <div class="mb-3">
+                            <label>Status</label>
+                            <input type="text" class="form-control" value="{{ object.get_status_display }}" readonly>
+                            <small class="form-text text-muted">Status cannot be changed while reserved or in use.</small>
+                        </div>
+                    {% else %}
+                        <div class="mb-3">
+                            {{ form.status.label_tag }}
+                            {{ form.status }}
+                            {% if form.status.help_text %}
+                                <small class="form-text text-muted">{{ form.status.help_text }}</small>
+                            {% endif %}
+                            {% if form.status.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.status.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+
+                    {% if object and object.image and object.image.name != "item_images/default_item.jpg" %}
+                        <div class="mb-3">
+                            <label for="extra_images">Additional Images</label>
+                            <input type="file" name="extra_images" id="extra_images" multiple class="form-control" accept="image/jpeg,image/png,image/jpg">
+                            <small class="form-text text-muted">You can select multiple images (JPG, JPEG, PNG only, max 5MB each)</small>
+                            <div class="image-preview mt-2" id="imagePreview"></div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info alert-dismissible fade show p-2 mb-2 rounded" role="alert">
+                            Optional: Upload a primary image to add additional images
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <style>
+                            .alert .btn-close {
+                              position: absolute;
+                              top: 50%;
+                              right: 10px; /* Adjust as needed */
+                              transform: translateY(-50%); /* Vertically center the button */
+                            }
+                        </style>
+                    {% endif %}
+
+                    {% if object and object.extra_images.all %}
+                        <div class="uploaded-images">
+                            <h5>Current Additional Images</h5>
+                            {% for img in object.extra_images.all %}
+                                <div class="uploaded-image-item">
+                                    <img src="{{ img.get_image_url }}" alt="Additional image" width="100" height="100" style="object-fit: cover;">
+                                    <input type="checkbox" name="delete_image_{{ img.id }}" id="delete_image_{{ img.id }}">
+                                    <label for="delete_image_{{ img.id }}">Delete</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> {{ action }}
+                        </button>
+                        <a href="{% url 'browse_equipment' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/footer.html' %}
+
+    <!-- javascript from claude 3.7 sonnet for character count in the description -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find the description textarea by its ID (depends on form construction)
+            const descriptionField = document.querySelector('textarea[name="description"]');
+            
+            if (descriptionField) {
+                // Create and insert counter element after the textarea
+                const counterDiv = document.createElement('div');
+                counterDiv.id = 'descriptionCounter';
+                counterDiv.className = 'character-counter';
+                counterDiv.innerHTML = '<span id="charCount">0</span>/3000 characters (max 500 words)';
+                
+                // Insert the counter after the textarea
+                descriptionField.parentNode.insertBefore(counterDiv, descriptionField.nextSibling);
+                
+                const charCount = document.getElementById('charCount');
+                const counter = document.getElementById('descriptionCounter');
+                const maxLength = 3000; // 500 words * 6 chars per word (average)
+                
+                // Initialize counter with current text
+                updateCounter();
+                
+                // Add event listeners for typing and pasting
+                descriptionField.addEventListener('input', updateCounter);
+                descriptionField.addEventListener('paste', function(e) {
+                    // Allow paste to happen
+                    setTimeout(function() {
+                        // After paste, check if over limit
+                        if (descriptionField.value.length > maxLength) {
+                            // Truncate to max length
+                            descriptionField.value = descriptionField.value.substring(0, maxLength);
+                        }
+                        updateCounter();
+                    }, 0);
+                });
+                
+                function updateCounter() {
+                    const currentLength = descriptionField.value.length;
+                    charCount.textContent = currentLength;
+                    
+                    // Change color when approaching limit
+                    if (currentLength > maxLength * 0.8) {
+                        counter.classList.add('warning');
+                    } else {
+                        counter.classList.remove('warning');
+                    }
+                    
+                    // Prevent typing beyond limit
+                    if (currentLength > maxLength) {
+                        descriptionField.value = descriptionField.value.substring(0, maxLength);
+                        charCount.textContent = maxLength;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
