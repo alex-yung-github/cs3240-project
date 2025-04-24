@@ -8,6 +8,10 @@ Team A-06
 - UI Design
 - Built in testing
 
+# Notes on project
+- AWS keys are posted for instructor grading (but will be deprecated)
+- 
+
 # Contribution Chart
 ![image](https://github.com/user-attachments/assets/da435e4a-df43-4fa4-85dd-0daa4616c70f)
 
